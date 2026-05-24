@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicode 16進位 4位數轉換器</title>
+    <!-- 引入 Tailwind CSS 用於現代化美觀排版 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自訂字體與細微動畫 */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- 主體內容 -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white shadow-xl rounded-2xl max-w-lg w-full p-6 md:p-8 border border-slate-100">
+            <!-- 標題 -->
+            <div class="text-center mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-indigo-600 mb-2">Unicode 16進位轉換器</h1>
+                <p class="text-slate-500 text-sm">輸入任意文字，轉換為 4 位數（或以上）的 16 進位碼</p>
+            </div>
+
+            <!-- 切換標籤頁 -->
+            <div class="flex border-b border-slate-100 mb-6">
+                <button id="tab-to-hex" class="flex-1 py-2 text-center border-b-2 border-indigo-500 font-semibold text-indigo-600 text-sm focus:outline-none transition-all">
+                    文字 ➔ 16進位
+                </button>
+                <button id="tab-to-text" class="flex-1 py-2 text-center border-b-2 border-transparent text-slate-500 hover:text-indigo-600 text-sm focus:outline-none transition-all">
+                    16進位 ➔ 文字
+                </button>
+            </div>
+
+            <!-- 介面 1：文字轉 16 進位 -->
+            <div id="panel-to-hex" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">請輸入文字：</label>
+                    <textarea id="text-input" rows="3" placeholder="例如輸入：As 或 國中數學..." 
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
+                </div>
+
+                <div class="relative bg-slate-900 rounded-xl p-4 text-white overflow-hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-indigo-300 uppercase tracking-wider font-bold">轉換結果 (Unicode 16進位)</span>
+                        <button id="copy-hex-btn" class="text-xs bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-2.5 py-1 rounded-md transition-all">
+                            複製結果
+                        </button>
+                    </div>
+                    <!-- 輸出顯示區域 -->
+                    <div id="hex-output" class="mono-font text-xl break-all min-h-[40px] tracking-wide font-bold text-teal-300 select-all">00410073</div>
+                </div>
+
+                <!-- 說明範例 -->
+                <div class="bg-amber-50 rounded-xl p-3 border border-amber-100 text-xs text-amber-800 space-y-1">
+                    <p class="font-bold">💡 轉換邏輯與原理：</p>
+                    <p>將每個字元轉為其 UTF-16 編碼。例如：</p>
+                    <ul class="list-disc list-inside ml-1">
+                        <li><code class="mono-font bg-amber-100 px-1 rounded">A</code> ➔ 10進位 65 ➔ 16進位 <code class="mono-font font-bold">0041</code></li>
+                        <li><code class="mono-font bg-amber-100 px-1 rounded">s</code> ➔ 10進位 115 ➔ 16進位 <code class="mono-font font-bold">0073</code></li>
+                        <li>合併輸出：<code class="mono-font font-bold">00410073</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 介面 2：16 進位轉文字 (預設隱藏) -->
+            <div id="panel-to-text" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">請輸入16進位碼 (連續或空白隔開)：</label>
+                    <textarea id="hex-input" rows="3" placeholder="例如輸入：00410073" 
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none mono-font"></textarea>
+                </div>
+
+                <div class="relative bg-slate-900 rounded-xl p-4 text-white overflow-hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-indigo-300 uppercase tracking-wider font-bold">還原結果 (文字)</span>
+                        <button id="copy-text-btn" class="text-xs bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-2.5 py-1 rounded-md transition-all">
+                            複製結果
+                        </button>
+                    </div>
+                    <div id="text-output" class="text-xl break-all min-h-[40px] font-medium text-teal-300 select-all">As</div>
+                </div>
+            </div>
+
+            <!-- 吐司通知 (Toast) 提示複製成功 -->
+            <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                已複製到剪貼簿！
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="text-center py-4 text-slate-400 text-xs">
+        Copyright Ⓒ 2026 Henrry. All Rights Reserved.
+    </footer>
+
+    <!-- 核心 JS 邏輯 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM 元素取得
+            const tabToHex = document.getElementById('tab-to-hex');
+            const tabToText = document.getElementById('tab-to-text');
+            const panelToHex = document.getElementById('panel-to-hex');
+            const panelToText = document.getElementById('panel-to-text');
+
+            const textInput = document.getElementById('text-input');
+            const hexOutput = document.getElementById('hex-output');
+            const hexInput = document.getElementById('hex-input');
+            const textOutput = document.getElementById('text-output');
+
+            const copyHexBtn = document.getElementById('copy-hex-btn');
+            const copyTextBtn = document.getElementById('copy-text-btn');
+            const toast = document.getElementById('toast');
+
+            // 初始化範例值
+            textInput.value = "As";
+            hexInput.value = "00410073";
+
+            // --- 頁籤切換邏輯 ---
+            tabToHex.addEventListener('click', () => {
+                switchTab(true);
+            });
+
+            tabToText.addEventListener('click', () => {
+                switchTab(false);
+            });
+
+            function switchTab(toHex) {
+                if (toHex) {
+                    tabToHex.className = "flex-1 py-2 text-center border-b-2 border-indigo-500 font-semibold text-indigo-600 text-sm focus:outline-none transition-all";
+                    tabToText.className = "flex-1 py-2 text-center border-b-2 border-transparent text-slate-500 hover:text-indigo-600 text-sm focus:outline-none transition-all";
+                    panelToHex.classList.remove('hidden');
+                    panelToText.classList.add('hidden');
+                    convertTextToHex();
+                } else {
+                    tabToText.className = "flex-1 py-2 text-center border-b-2 border-indigo-500 font-semibold text-indigo-600 text-sm focus:outline-none transition-all";
+                    tabToHex.className = "flex-1 py-2 text-center border-b-2 border-transparent text-slate-500 hover:text-indigo-600 text-sm focus:outline-none transition-all";
+                    panelToText.classList.remove('hidden');
+                    panelToHex.classList.add('hidden');
+                    convertHexToText();
+                }
+            }
+
+            // --- 1. 文字轉 16 進位邏輯 (即時觸發) ---
+            function convertTextToHex() {
+                const text = textInput.value;
+                if (!text) {
+                    hexOutput.textContent = "";
+                    return;
+                }
+
+                let result = "";
+                for (let i = 0; i < text.length; i++) {
+                    const charCode = text.charCodeAt(i);
+                    // 轉為 16 進位，並強制補零到 4 位數 (例如 0041)
+                    let hex = charCode.toString(16).toUpperCase();
+                    while (hex.length < 4) {
+                        hex = "0" + hex;
+                    }
+                    result += hex;
+                }
+                hexOutput.textContent = result;
+            }
+
+            textInput.addEventListener('input', convertTextToHex);
+
+            // --- 2. 16 進位轉文字邏輯 (即時觸發) ---
+            function convertHexToText() {
+                // 清理輸入，只留下 16 進位字元 [0-9A-Fa-f]
+                let cleanHex = hexInput.value.replace(/[^0-9A-Fa-f]/g, '');
+                if (!cleanHex) {
+                    textOutput.textContent = "";
+                    return;
+                }
+
+                let result = "";
+                // 每次讀取 4 個字元作為一個 Unicode 代碼單元
+                for (let i = 0; i < cleanHex.length; i += 4) {
+                    const hexChunk = cleanHex.substring(i, i + 4);
+                    if (hexChunk) {
+                        const codeVal = parseInt(hexChunk, 16);
+                        if (!isNaN(codeVal)) {
+                            result += String.fromCharCode(codeVal);
+                        }
+                    }
+                }
+                textOutput.textContent = result;
+            }
+
+            hexInput.addEventListener('input', convertHexToText);
+
+            // --- 複製功能 ---
+            function setupClipboard(button, getElementToCopy) {
+                button.addEventListener('click', () => {
+                    const textToCopy = getElementToCopy().textContent;
+                    if (!textToCopy) return;
+
+                    // 建立臨時 textarea 來達成高相容性複製 (因 iframe 內限制，不一定能用 navigator.clipboard)
+                    const tempTextArea = document.createElement('textarea');
+                    tempTextArea.value = textToCopy;
+                    document.body.appendChild(tempTextArea);
+                    tempTextArea.select();
+                    
+                    try {
+                        document.execCommand('copy');
+                        showToast();
+                    } catch (err) {
+                        console.error('複製失敗：', err);
+                    }
+                    document.body.removeChild(tempTextArea);
+                });
+            }
+
+            setupClipboard(copyHexBtn, () => hexOutput);
+            setupClipboard(copyTextBtn, () => textOutput);
+
+            // 顯示複製成功的輕量提示 (Toast)
+            function showToast() {
+                toast.classList.remove('opacity-0', 'pointer-events-none');
+                toast.classList.add('opacity-100');
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100');
+                    toast.classList.add('opacity-0', 'pointer-events-none');
+                }, 1800);
+            }
+        });
+    </script>
+</body>
+</html>
